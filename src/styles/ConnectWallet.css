@@ -183,7 +183,39 @@
 }
 
 /* Info Displays */
-.account-info, .balance-info, .transaction-info {
+.blue-info {
+  background: #d0ebff; /* Light blue background */
+  color: #0056b3; /* Dark blue text */
+  border-left: 4px solid #007bff; /* Blue accent border */
+}
+
+.green-info {
+  background: #d3f9d8; /* Light green background */
+  color: #155724; /* Dark green text */
+  border-left: 4px solid #28a745; /* Green accent border */
+}
+
+.orange-info {
+  background: #ffe4b5; /* Light orange background */
+  color: #c05a00; /* Dark orange text */
+  border-left: 4px solid #ff9800; /* Orange accent border */
+}
+
+.violet-info {
+  background: #e2d9f3; /* Light violet background */
+  color: #4a148c; /* Dark violet text */
+  border-left: 4px solid #6f42c1; /* Violet accent border */
+}
+
+/* Info Displays */
+.account-info,
+.balance-info,
+.blue-info,
+.violet-info,
+.orange-info,
+.green-info,
+.transaction-info,
+.InfoDisplay {
   padding: 10px;
   border-radius: 8px;
   margin: 5px 0;
@@ -197,6 +229,12 @@
 }
 
 .balance-info {
+  background: #e3f2fd;
+  color: #0d47a1;
+  border-left: 4px solid #2196f3;
+}
+
+.blue-info {
   background: #e3f2fd;
   color: #0d47a1;
   border-left: 4px solid #2196f3;
