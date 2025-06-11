@@ -5,7 +5,7 @@ import "../styles/ConnectWallet.css"; // Import the CSS
 export default function ConnectWallet() {
   const [account, setAccount] = useState("");
   const [balance, setBalance] = useState("");
-  const [transactionHash, setTransactionHash] = useState("");
+  // const [transactionHash, setTransactionHash] = useState("");
   const [values, setValues] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
@@ -235,114 +235,114 @@ export default function ConnectWallet() {
     }
   };
 
-  const executeTGE = async () => {
-    if (!account) {
-      showToast("Please connect your wallet first", "warning");
-      return;
-    }
+  // const executeTGE = async () => {
+  //   if (!account) {
+  //     showToast("Please connect your wallet first", "warning");
+  //     return;
+  //   }
 
-    setIsLoading(true);
-    setTransactionHash(""); // Clear previous transaction hash
+  //   setIsLoading(true);
+  //   setTransactionHash(""); // Clear previous transaction hash
 
-    try {
-      showToast("Preparing TGE execution...", "info", 2000);
+  //   try {
+  //     showToast("Preparing TGE execution...", "info", 2000);
 
-      const signer = await getSigner();
-      const contract = getContract(signer);
+  //     const signer = await getSigner();
+  //     const contract = getContract(signer);
 
-      // Check if TGE is already executed
-      const tgeExecuted = await contract.tgeExecuted();
-      if (tgeExecuted) {
-        throw new Error("TGE has already been executed for this contract");
-      }
+  //     // Check if TGE is already executed
+  //     const tgeExecuted = await contract.tgeExecuted();
+  //     if (tgeExecuted) {
+  //       throw new Error("TGE has already been executed for this contract");
+  //     }
 
-      // Check if user is the owner (if applicable)
-      try {
-        const owner = await contract.owner();
-        const userAddress = await signer.getAddress();
-        if (owner.toLowerCase() !== userAddress.toLowerCase()) {
-          throw new Error("Only the contract owner can execute TGE");
-        }
-      } catch (ownerError) {
-        // If owner() function doesn't exist, continue
-        console.log("Owner check skipped:", ownerError.message);
-      }
+  //     // Check if user is the owner (if applicable)
+  //     try {
+  //       const owner = await contract.owner();
+  //       const userAddress = await signer.getAddress();
+  //       if (owner.toLowerCase() !== userAddress.toLowerCase()) {
+  //         throw new Error("Only the contract owner can execute TGE");
+  //       }
+  //     } catch (ownerError) {
+  //       // If owner() function doesn't exist, continue
+  //       console.log("Owner check skipped:", ownerError.message);
+  //     }
 
-      // Estimate gas before execution
-      try {
-        const gasEstimate = await contract.estimateGas.executeTGE();
-        showToast(`Estimated gas: ${gasEstimate.toString()}`, "info", 2000);
-      } catch (gasError) {
-        console.warn("Gas estimation failed:", gasError);
-        showToast(
-          "Warning: Could not estimate gas. Transaction may fail.",
-          "warning"
-        );
-      }
+  //     // Estimate gas before execution
+  //     try {
+  //       const gasEstimate = await contract.estimateGas.executeTGE();
+  //       showToast(`Estimated gas: ${gasEstimate.toString()}`, "info", 2000);
+  //     } catch (gasError) {
+  //       console.warn("Gas estimation failed:", gasError);
+  //       showToast(
+  //         "Warning: Could not estimate gas. Transaction may fail.",
+  //         "warning"
+  //       );
+  //     }
 
-      showToast(
-        "Executing TGE... Please confirm the transaction in your wallet",
-        "info"
-      );
+  //     showToast(
+  //       "Executing TGE... Please confirm the transaction in your wallet",
+  //       "info"
+  //     );
 
-      const tx = await contract.executeTGE();
+  //     const tx = await contract.executeTGE();
 
-      showToast(
-        `Transaction submitted! Hash: ${tx.hash.substring(0, 10)}...`,
-        "info"
-      );
-      setTransactionHash(tx.hash);
+  //     showToast(
+  //       `Transaction submitted! Hash: ${tx.hash.substring(0, 10)}...`,
+  //       "info"
+  //     );
+  //     setTransactionHash(tx.hash);
 
-      showToast("Waiting for transaction confirmation...", "info");
+  //     showToast("Waiting for transaction confirmation...", "info");
 
-      const receipt = await tx.wait();
+  //     const receipt = await tx.wait();
 
-      if (receipt.status === 1) {
-        showToast("🎉 TGE executed successfully!", "success", 7000);
+  //     if (receipt.status === 1) {
+  //       showToast("🎉 TGE executed successfully!", "success", 7000);
 
-        // Refresh balance after successful execution
-        const newBalance = await contract.balanceOf(account);
-        setBalance(newBalance.toString());
+  //       // Refresh balance after successful execution
+  //       const newBalance = await contract.balanceOf(account);
+  //       setBalance(newBalance.toString());
 
-        showToast(
-          `Updated balance: ${newBalance.toString()} GWRS`,
-          "success",
-          5000
-        );
-      } else {
-        throw new Error("Transaction failed during execution");
-      }
-    } catch (err) {
-      setTransactionHash(""); // Clear transaction hash on error
-      handleError(err, "TGE Execution");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //       showToast(
+  //         `Updated balance: ${newBalance.toString()} GWRS`,
+  //         "success",
+  //         5000
+  //       );
+  //     } else {
+  //       throw new Error("Transaction failed during execution");
+  //     }
+  //   } catch (err) {
+  //     setTransactionHash(""); // Clear transaction hash on error
+  //     handleError(err, "TGE Execution");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  const checkBalance = async () => {
-    if (!account) {
-      showToast("Please connect your wallet first", "warning");
-      return;
-    }
+  // const checkBalance = async () => {
+  //   if (!account) {
+  //     showToast("Please connect your wallet first", "warning");
+  //     return;
+  //   }
 
-    setIsLoading(true);
-    try {
-      showToast("Refreshing balance...", "info", 1000);
+  //   setIsLoading(true);
+  //   try {
+  //     showToast("Refreshing balance...", "info", 1000);
 
-      const signer = await getSigner();
-      const address = await signer.getAddress();
-      const contract = getContract(signer);
-      const bal = await contract.balanceOf(address);
-      setBalance(bal.toString());
+  //     const signer = await getSigner();
+  //     const address = await signer.getAddress();
+  //     const contract = getContract(signer);
+  //     const bal = await contract.balanceOf(address);
+  //     setBalance(bal.toString());
 
-      showToast(`Balance updated: ${bal.toString()} GWRS`, "success");
-    } catch (err) {
-      handleError(err, "Balance Check");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     showToast(`Balance updated: ${bal.toString()} GWRS`, "success");
+  //   } catch (err) {
+  //     handleError(err, "Balance Check");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const fetchInitializers = async () => {
     setIsLoading(true);
@@ -367,8 +367,7 @@ export default function ConnectWallet() {
         liquidityWallet,
         foundationWallet,
         logisticsWallet,
-        teamWallet,
-        initialOwner,
+        teamWallet
       ] = await Promise.all([
         contract.TOTAL_SUPPLY(),
         contract.TGE_UNLOCK(),
@@ -575,8 +574,6 @@ export default function ConnectWallet() {
           <p>Foundation: {values.foundation}</p>
           <p>Logistics: {values.logistics}</p> */}
             </div>
-
-            
           )}
         </div>
         {/* Contract Information Card */}

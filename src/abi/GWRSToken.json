@@ -23,6 +23,11 @@
 			},
 			{
 				"internalType": "address",
+				"name": "_idoFundWallet",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
 				"name": "_initialOwner",
 				"type": "address"
 			}
@@ -114,16 +119,6 @@
 			}
 		],
 		"name": "ERC20InvalidSpender",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "EnforcedPause",
-		"type": "error"
-	},
-	{
-		"inputs": [],
-		"name": "ExpectedPause",
 		"type": "error"
 	},
 	{
@@ -220,6 +215,50 @@
 		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "totalAmount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "initialUnlock",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "lockedAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "IDOFundsLocked",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "totalReleased",
+				"type": "uint256"
+			}
+		],
+		"name": "IDOFundsReleased",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
 				"indexed": true,
 				"internalType": "address",
 				"name": "previousOwner",
@@ -284,6 +323,19 @@
 			}
 		],
 		"name": "StakingRewardsClaimed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"name": "TGEExecuted",
 		"type": "event"
 	},
 	{
@@ -390,6 +442,45 @@
 	{
 		"inputs": [],
 		"name": "CLIFF_DURATION",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "IDO_FUND_INITIAL_UNLOCK",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "IDO_FUND_LOCK_DURATION",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "IDO_FUND_VESTING_DURATION",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -628,6 +719,19 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "calculateReleasableIDOFunds",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -849,6 +953,54 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "getIDOFundLockInfo",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "totalRaised",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "initialUnlockAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lockedAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "releasedAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lockStartTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "vestingStartTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "releasableNow",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "initialized",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -881,6 +1033,62 @@
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "idoFundLock",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "totalRaised",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "initialUnlockAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lockedAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "releasedAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lockStartTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "vestingStartTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "initialized",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "idoFundWallet",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -1028,6 +1236,13 @@
 	},
 	{
 		"inputs": [],
+		"name": "pause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "paused",
 		"outputs": [
 			{
@@ -1037,6 +1252,13 @@
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "releaseIDOFunds",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1097,6 +1319,19 @@
 			}
 		],
 		"name": "setIDOAllocations",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_totalRaised",
+				"type": "uint256"
+			}
+		],
+		"name": "setIDORaisedFunds",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -1368,5 +1603,9 @@
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ]

@@ -632,3 +632,54 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
+
+
+
+/* TokenTransfer.css */
+.token-transfer-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.token-transfer-title {
+  font-size: 1.5rem; /* Larger font size for the title */
+  font-weight: bold;
+  color: #333; /* Dark text color */
+  margin-bottom: 16px; /* Space below the title */
+}
+
+.token-transfer-input-group {
+  margin-bottom: 16px; /* Space between input groups */
+}
+
+.token-transfer-input-group input {
+  width: 100%; /* Full width input fields */
+  padding: 12px; /* Padding inside the input fields */
+  border: 1px solid #ccc; /* Border color */
+  border-radius: 4px; /* Rounded input fields */
+  font-size: 1rem; /* Font size */
+  margin-top: 8px; /* Space above the input fields */
+}
+
+.token-transfer-button {
+  background-color: #667eea; /* Button background color */
+  color: white; /* White text color */
+  border: none; /* No border */
+  border-radius: 4px; /* Rounded corners */
+  padding: 12px; /* Padding inside the button */
+  font-size: 1rem; /* Font size */
+  cursor: pointer; /* Pointer cursor */
+  width: 30%; /* Full width button */
+  margin-top: 16px; /* Space above the button */
+}
+
+.token-transfer-button:hover {
+  background-color: #667eea; /* Darker color on hover */
+}
