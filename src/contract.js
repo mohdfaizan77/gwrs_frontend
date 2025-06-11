@@ -3,7 +3,7 @@ import { Contract, JsonRpcProvider, BrowserProvider } from 'ethers';
 import GWRS_ABI from './abi/GWRSToken.json';
 
 // For local Hardhat testnet (backend connection)
-const provider = new JsonRpcProvider('http://localhost:8545');
+const provider = new JsonRpcProvider('http://127.0.0.1:8545');
 
 // For user wallet connection (frontend, MetaMask)
 export const getSigner = async () => {
@@ -16,7 +16,7 @@ export const getSigner = async () => {
 
 export const getContract = (signerOrProvider = provider) =>
   new Contract(
-    "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+    "0x73511669fd4de447fed18bb79bafeac93ab7f31f",
     GWRS_ABI,
     signerOrProvider
   );
