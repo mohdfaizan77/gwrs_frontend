@@ -5,11 +5,16 @@ import "../styles/ConnectWallet.css"; // Import the CSS
 export default function ConnectWallet() {
   const [account, setAccount] = useState("");
   const [balance, setBalance] = useState("");
-  // const [transactionHash, setTransactionHash] = useState("");
+  const [toAddress, setToAddress] = useState(
+    "0x859c4567383A1555bE6549a40C349C1fd52214df"
+  );
+  const [amount, setAmount] = useState("");
+  const [transactionHash, setTransactionHash] = useState("");
   const [values, setValues] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [availableAccounts, setAvailableAccounts] = useState([]);
+  const [paused, setPaused] = useState(false);
 
   // Toast notification system
   const showToast = (message, type = "info", duration = 5000) => {
@@ -140,41 +145,71 @@ export default function ConnectWallet() {
     }
   };
 
-  // Manual account switching
-  const switchAccount = async () => {
+  const transferTokenToUser = async () => {
     try {
-      showToast("Opening account selector...", "info", 2000);
-
-      // Request account access (this will open MetaMask account selection)
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      if (accounts.length > 0) {
-        const newAccount = accounts[0];
-        setAccount(newAccount);
-        setBalance(""); // Clear old balance
-        setAvailableAccounts(accounts);
-
-        showToast(
-          `Switched to: ${newAccount.substring(0, 6)}...${newAccount.substring(
-            36
-          )}`,
-          "success"
-        );
-
-        // Get balance for new account
-        const signer = await getSigner();
-        const contract = getContract(signer);
-        const bal = await contract.balanceOf(newAccount);
-        setBalance(bal.toString());
-
-        showToast(`Balance loaded: ${bal.toString()} GWRS`, "info", 3000);
+      if (!toAddress || !amount) {
+        showToast("Please enter a valid address and amount!", "warning", 3000);
+        return;
       }
-    } catch (err) {
-      handleError(err, "Account Switch");
+
+      const signer = await getSigner();
+      const contract = getContract(signer);
+
+      showToast("Processing transaction...", "info", 2000);
+
+      const tx = await contract.transfer(toAddress, amount);
+      await tx.wait(); // Wait for transaction confirmation
+
+      setTransactionHash(tx.hash);
+      showToast("Transfer successful!", "success", 3000);
+    } catch (error) {
+      console.error("Transfer failed:", error);
+      showToast("Transfer failed!", "error", 3000);
     }
   };
+
+  let currentIndex = 0; // Track current account index
+
+  // const switchAccount = async () => {
+  //   try {
+  //     const accounts = await window.ethereum.request({
+  //       method: "eth_requestAccounts",
+  //     });
+
+  //     if (accounts.length > 0) {
+  //       // Rotate index
+  //       currentIndex = (currentIndex + 1) % accounts.length;
+  //       const newAccount = accounts[currentIndex];
+
+  //       setAccount(newAccount);
+  //       setBalance(""); // Clear old balance
+  //       setAvailableAccounts(accounts);
+
+  //       showToast(
+  //         `Switched to: ${newAccount.substring(0, 6)}...${newAccount.slice(
+  //           -4
+  //         )}`,
+  //         "success"
+  //       );
+
+  //       // Get balance for new account
+  //       const signer = await getSigner();
+  //       const contract = getContract(signer);
+  //       const bal = await contract.balanceOf(newAccount);
+  //       setBalance(bal.toString());
+
+  //       showToast(`Balance loaded: ${bal.toString()} GWRS`, "info", 3000);
+  //     } else {
+  //       showToast(
+  //         "No accounts found. Please connect your wallet!",
+  //         "error",
+  //         3000
+  //       );
+  //     }
+  //   } catch (err) {
+  //     handleError(err, "Account Switch");
+  //   }
+  // };
 
   // Get all available accounts
   const getAllAccounts = async () => {
@@ -235,114 +270,58 @@ export default function ConnectWallet() {
     }
   };
 
-  // const executeTGE = async () => {
-  //   if (!account) {
-  //     showToast("Please connect your wallet first", "warning");
-  //     return;
-  //   }
+  // Disconnect wallet function
+const disconnect = () => {
+  try {
+    setAccount(""); // Clear account state
+    setBalance(""); // Clear balance
+    showToast("Wallet disconnected successfully!", "warning", 3000);
+  } catch (err) {
+    console.error("Error disconnecting wallet:", err);
+    showToast("Failed to disconnect wallet!", "error", 3000);
+  }
+};
 
-  //   setIsLoading(true);
-  //   setTransactionHash(""); // Clear previous transaction hash
 
-  //   try {
-  //     showToast("Preparing TGE execution...", "info", 2000);
 
-  //     const signer = await getSigner();
-  //     const contract = getContract(signer);
+  const handlePauseUnpause = async () => {
+    try {
+      setIsLoading(true);
+      const signer = await getSigner();
+      const contract = getContract(signer);
 
-  //     // Check if TGE is already executed
-  //     const tgeExecuted = await contract.tgeExecuted();
-  //     if (tgeExecuted) {
-  //       throw new Error("TGE has already been executed for this contract");
-  //     }
+      if (!account) {
+        console.error("No account connected");
+        showToast(
+          "No account connected. Please connect your wallet!",
+          "error",
+          3000
+        );
+        setIsLoading(false);
+        return;
+      }
 
-  //     // Check if user is the owner (if applicable)
-  //     try {
-  //       const owner = await contract.owner();
-  //       const userAddress = await signer.getAddress();
-  //       if (owner.toLowerCase() !== userAddress.toLowerCase()) {
-  //         throw new Error("Only the contract owner can execute TGE");
-  //       }
-  //     } catch (ownerError) {
-  //       // If owner() function doesn't exist, continue
-  //       console.log("Owner check skipped:", ownerError.message);
-  //     }
+      // Check the current contract state
+      const isPaused = await contract.paused();
+      setPaused(isPaused); // Store paused state
 
-  //     // Estimate gas before execution
-  //     try {
-  //       const gasEstimate = await contract.estimateGas.executeTGE();
-  //       showToast(`Estimated gas: ${gasEstimate.toString()}`, "info", 2000);
-  //     } catch (gasError) {
-  //       console.warn("Gas estimation failed:", gasError);
-  //       showToast(
-  //         "Warning: Could not estimate gas. Transaction may fail.",
-  //         "warning"
-  //       );
-  //     }
+      if (isPaused) {
+        await contract.unpause(); // Unpause if paused
+        showToast("Contract is now unpaused!", "success", 3000);
+      } else {
+        await contract.pause(); // Pause if active
+        showToast("Contract is now paused!", "warning", 3000);
+      }
 
-  //     showToast(
-  //       "Executing TGE... Please confirm the transaction in your wallet",
-  //       "info"
-  //     );
-
-  //     const tx = await contract.executeTGE();
-
-  //     showToast(
-  //       `Transaction submitted! Hash: ${tx.hash.substring(0, 10)}...`,
-  //       "info"
-  //     );
-  //     setTransactionHash(tx.hash);
-
-  //     showToast("Waiting for transaction confirmation...", "info");
-
-  //     const receipt = await tx.wait();
-
-  //     if (receipt.status === 1) {
-  //       showToast("🎉 TGE executed successfully!", "success", 7000);
-
-  //       // Refresh balance after successful execution
-  //       const newBalance = await contract.balanceOf(account);
-  //       setBalance(newBalance.toString());
-
-  //       showToast(
-  //         `Updated balance: ${newBalance.toString()} GWRS`,
-  //         "success",
-  //         5000
-  //       );
-  //     } else {
-  //       throw new Error("Transaction failed during execution");
-  //     }
-  //   } catch (err) {
-  //     setTransactionHash(""); // Clear transaction hash on error
-  //     handleError(err, "TGE Execution");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  // const checkBalance = async () => {
-  //   if (!account) {
-  //     showToast("Please connect your wallet first", "warning");
-  //     return;
-  //   }
-
-  //   setIsLoading(true);
-  //   try {
-  //     showToast("Refreshing balance...", "info", 1000);
-
-  //     const signer = await getSigner();
-  //     const address = await signer.getAddress();
-  //     const contract = getContract(signer);
-  //     const bal = await contract.balanceOf(address);
-  //     setBalance(bal.toString());
-
-  //     showToast(`Balance updated: ${bal.toString()} GWRS`, "success");
-  //   } catch (err) {
-  //     handleError(err, "Balance Check");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+      // Update paused state after execution
+      setPaused(await contract.paused());
+    } catch (error) {
+      console.error("Error pausing/unpausing contract:", error);
+      showToast("Failed to pause/unpause contract!", "error", 3000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchInitializers = async () => {
     setIsLoading(true);
@@ -367,7 +346,7 @@ export default function ConnectWallet() {
         liquidityWallet,
         foundationWallet,
         logisticsWallet,
-        teamWallet
+        teamWallet,
       ] = await Promise.all([
         contract.TOTAL_SUPPLY(),
         contract.TGE_UNLOCK(),
@@ -412,35 +391,7 @@ export default function ConnectWallet() {
     }
   };
 
-
-  // {/* TGE Operations Card */}
-  //       <div className="dashboard-card">
-  //         <h2 className="card-title">TGE Operations</h2>
-
-  //         <button
-  //           className={`btn execute-tge-button ${isLoading ? "loading" : ""}`}
-  //           onClick={executeTGE}
-  //           disabled={isLoading || !account}
-  //         >
-  //           Execute TGE
-  //         </button>
-
-  //         <button
-  //           className={`btn check-balance-button ${isLoading ? "loading" : ""}`}
-  //           onClick={checkBalance}
-  //           disabled={isLoading || !account}
-  //         >
-  //           Refresh Balance
-  //         </button>
-
-  //         {transactionHash && (
-  //           <div className="transaction-info">
-  //             <strong>Transaction Hash:</strong>
-  //             <br />
-  //             {transactionHash}
-  //           </div>
-  //         )}
-  //       </div>
+  const getButtonLabel = () => (paused ? "Unpause Contract" : "Pause Contract");
 
   return (
     <div className="connect-wallet-container">
@@ -472,13 +423,12 @@ export default function ConnectWallet() {
       </div>
       {/* Header */}
       <div className="wallet-header">
-        <h1>Token Dashboard</h1>
-        <p>Manage your tokens and execute TGE operations</p>
+        <h1>Goodware Solidity Contract Dashboard</h1>
+        {/* <p>Manage your tokens and execute TGE operations</p> */}
       </div>
 
       {/* Dashboard Grid */}
       <div className="dashboard-grid">
-        
         {/* Wallet Connection Card */}
         <div className="dashboard-card">
           <h2 className="card-title">Wallet Connection</h2>
@@ -504,6 +454,31 @@ export default function ConnectWallet() {
             </button>
 
             {account && (
+              // disconnect
+              <button
+                className={`btn switch-account-button ${
+                  isLoading ? "loading" : ""
+                }`}
+                onClick={disconnect}
+                disabled={isLoading}
+                title="Disconnect Wallet"
+              >
+                🔄 Disconnect Wallet
+              </button>
+            )}
+
+            {account && (
+              <button
+                className={`btn connect-button ${isLoading ? "loading" : ""}`}
+                onClick={handlePauseUnpause}
+                disabled={isLoading}
+              >
+                {getButtonLabel()}
+              </button>
+            )}
+
+            {/* {account && (
+              // disconnect
               <button
                 className={`btn switch-account-button ${
                   isLoading ? "loading" : ""
@@ -512,9 +487,9 @@ export default function ConnectWallet() {
                 disabled={isLoading}
                 title="Switch to a different MetaMask account"
               >
-                🔄 Switch Account
+                🔄 Refresh Account
               </button>
-            )}
+            )} */}
           </div>
 
           {account && (
@@ -554,6 +529,40 @@ export default function ConnectWallet() {
           {balance && (
             <div className="balance-info">
               <strong>Token Balance:</strong> {balance} GWRS
+            </div>
+          )}
+        </div>
+
+        {/* Transfer Tokens to User Address */}
+        <div className="dashboard-card">
+          <h2 className="card-title">Transfer Tokens From Owener to User</h2>
+          <div className="token-transfer-input-group blue-info">
+            <input
+              type="text"
+              placeholder="Recipient Address"
+              value={toAddress}
+              onChange={(e) => setToAddress(e.target.value)}
+            />
+          </div>
+          <div className="token-transfer-input-group green-info">
+            <input
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          <div className="token_btn">
+            <button
+              className="token-transfer-button"
+              onClick={transferTokenToUser}
+            >
+              Send Tokens
+            </button>
+          </div>
+          {transactionHash && (
+            <div className="transaction-hash-display">
+              <p>✅ Transaction Hash: {transactionHash}</p>
             </div>
           )}
         </div>
