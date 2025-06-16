@@ -16,7 +16,7 @@ export const getSigner = async () => {
 
 export const getContract = (signerOrProvider = provider) =>
   new Contract(
-    "0x5095d3313c76e8d29163e40a0223a5816a8037d8",
+    "0x6d925938edb8a16b3035a4cf34faa090f490202a",
     GWRS_ABI,
     signerOrProvider
   );

@@ -18,6 +18,7 @@ export default function ConnectWallet() {
   const [availableAccounts, setAvailableAccounts] = useState([]);
   const [paused, setPaused] = useState(false);
   const [tgeExecuted, setExecuted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
 
   // Toast notification system
   const showToast = (message, type = "info", duration = 5000) => {
@@ -35,7 +36,7 @@ export default function ConnectWallet() {
   };
 
   const handleLogout = () => {
-      navigate("/");
+    navigate("/");
   };
 
   // Enhanced error handler
@@ -89,6 +90,46 @@ export default function ConnectWallet() {
     showToast(errorMessage, errorType);
   };
 
+  const VESTING_DURATION = 24 * 30 * 24 * 60 * 60; // 24 months in seconds
+  const CLIFF_DURATION = 6 * 30 * 24 * 60 * 60; // 6 months in seconds
+
+  /**
+   * Fetch the TGE timestamp from the smart contract
+   * @returns {Promise<number>} The TGE timestamp
+   */
+  const getTgeTimestamp = async () => {
+    try {
+      const signer = await getSigner();
+      const contract = getContract(signer);
+      const tgeTimestamp = await contract.tgeTimestamp();
+      return Number(tgeTimestamp); // Convert BigNumber to number
+    } catch (error) {
+      console.error("Error fetching TGE timestamp:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Calculate the time left until the next vesting claim can be made
+   * @param {number} tgeTimestamp - The timestamp when TGE was executed
+   * @returns {number} Time left in seconds
+   */
+  const timeLeftToClaimVestedTokens = (tgeTimestamp) => {
+    const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+    const elapsedTime = currentTime - tgeTimestamp;
+
+    if (elapsedTime < CLIFF_DURATION) {
+      // If the cliff period has not passed yet, return the remaining time to the cliff
+      return CLIFF_DURATION - elapsedTime;
+    } else if (elapsedTime < VESTING_DURATION) {
+      // If the cliff period has passed but the vesting period has not completed, return the remaining vesting time
+      return VESTING_DURATION - elapsedTime;
+    } else {
+      // If the vesting period has completed, no time left
+      return 0;
+    }
+  };
+
   // Account change detection
   useEffect(() => {
     if (window.ethereum) {
@@ -138,11 +179,47 @@ export default function ConnectWallet() {
         window.ethereum.removeListener("chainChanged", handleChainChanged);
       };
     }
-  }, [account, tgeExecuted]);
+  }, [account]);
 
   useEffect(() => {
     handleTgeExecution();
   }, [tgeExecuted]);
+
+  useEffect(() => {
+    const fetchAndSetTgeTimestamp = async () => {
+      try {
+        const tgeTimestamp = await getTgeTimestamp();
+        const timeLeft = timeLeftToClaimVestedTokens(tgeTimestamp);
+        setTimeLeft(timeLeft);
+      } catch (error) {
+        console.error("Failed to fetch TGE timestamp:", error);
+      }
+    };
+
+    fetchAndSetTgeTimestamp();
+
+    const interval = setInterval(() => {
+      if (timeLeft !== null) {
+        const newTimeLeft = timeLeft - 1;
+        if (newTimeLeft > 0) {
+          setTimeLeft(newTimeLeft);
+        } else {
+          clearInterval(interval);
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timeLeft]);
+
+  const formatTime = (seconds) => {
+    const days = Math.floor(seconds / (24 * 60 * 60));
+    const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+    const minutes = Math.floor((seconds % (60 * 60)) / 60);
+    const secs = seconds % 60;
+
+    return `${days}d ${hours}h ${minutes}m ${secs}s`;
+  };
 
   // Helper function to refresh balance for a specific account
   const refreshBalanceForAccount = async (accountAddress) => {
@@ -421,21 +498,22 @@ export default function ConnectWallet() {
         ))}
       </div>
       {/* Header */}
-      <div>
-        <div className="wallet-header">
-        <h1>Goodware Solidity Contract Dashboard</h1>
-        {/* <p>Manage your tokens and execute TGE operations</p> */}
-      </div>
-      <div className="logout">
-       <button  className={`btn switch-account-button ${
-                  isLoading ? "loading" : ""
-                }`} onClick={handleLogout}>Logout</button> 
-       
-      </div>
+      <div className="wallet-header">
+        <div>
+          <h1>Goodware Solidity Contract Dashboard</h1>
+          {/* <p>Manage your tokens and execute TGE operations</p> */}
         </div>
-      
-
-      
+        <div className="logout">
+          <button
+            className={`btn switch-account-button ${
+              isLoading ? "loading" : ""
+            }`}
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
 
       {/* Dashboard Grid */}
       <div className="dashboard-grid">
@@ -480,16 +558,6 @@ export default function ConnectWallet() {
             {account && (
               <button
                 className={`btn connect-button ${isLoading ? "loading" : ""}`}
-                onClick={handlePauseUnpause}
-                disabled={isLoading}
-              >
-                {getButtonLabel()}
-              </button>
-            )}
-
-            {account && (
-              <button
-                className={`btn connect-button ${isLoading ? "loading" : ""}`}
                 onClick={() => handleTgeExecution()}
                 disabled={isLoading}
               >
@@ -526,6 +594,12 @@ export default function ConnectWallet() {
                 >
                   📋
                 </button>
+                <h1>Time Left to Claim Vested Tokens</h1>
+                {timeLeft !== null ? (
+                  <p className="timer">{formatTime(timeLeft)}</p>
+                ) : (
+                  <p>Loading...</p>
+                )}
               </div>
 
               {availableAccounts.length > 1 && (
@@ -551,7 +625,7 @@ export default function ConnectWallet() {
 
         {/* Transfer Tokens to User Address */}
         <div className="dashboard-card">
-          <h2 className="card-title">Transfer Tokens From Owener to User</h2>
+          <h2 className="card-title">Transfer Tokens</h2>
           <div className="token-transfer-input-group blue-info">
             <input
               type="text"
@@ -563,7 +637,7 @@ export default function ConnectWallet() {
           <div className="token-transfer-input-group green-info">
             <input
               type="number"
-              placeholder="Amount"
+              placeholder="Tokens"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
@@ -582,7 +656,7 @@ export default function ConnectWallet() {
             </div>
           )}
         </div>
-
+        
         <div className="dashboard-card">
           <h2 className="card-title">Token Allocations</h2>
           {values && (

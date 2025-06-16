@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import '../styles/Auth.css'; // Import the CSS file
+import '../styles/ConnectWallet.css'; // Import the CSS file
 
 export default function Login() {
     const navigate = useNavigate();
