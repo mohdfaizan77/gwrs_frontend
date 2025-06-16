@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getSigner, getContract } from "../contract";
 import "../styles/ConnectWallet.css"; // Import the CSS
 
 export default function ConnectWallet() {
+  const navigate = useNavigate();
   const [account, setAccount] = useState("");
   const [balance, setBalance] = useState("");
   const [toAddress, setToAddress] = useState(
@@ -15,6 +17,7 @@ export default function ConnectWallet() {
   const [toasts, setToasts] = useState([]);
   const [availableAccounts, setAvailableAccounts] = useState([]);
   const [paused, setPaused] = useState(false);
+  const [tgeExecuted, setExecuted] = useState(false);
 
   // Toast notification system
   const showToast = (message, type = "info", duration = 5000) => {
@@ -29,6 +32,10 @@ export default function ConnectWallet() {
 
   const removeToast = (id) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
+  const handleLogout = () => {
+      navigate("/");
   };
 
   // Enhanced error handler
@@ -83,7 +90,7 @@ export default function ConnectWallet() {
   };
 
   // Account change detection
-  React.useEffect(() => {
+  useEffect(() => {
     if (window.ethereum) {
       const handleAccountsChanged = (accounts) => {
         if (accounts.length === 0) {
@@ -131,7 +138,11 @@ export default function ConnectWallet() {
         window.ethereum.removeListener("chainChanged", handleChainChanged);
       };
     }
-  }, [account]);
+  }, [account, tgeExecuted]);
+
+  useEffect(() => {
+    handleTgeExecution();
+  }, [tgeExecuted]);
 
   // Helper function to refresh balance for a specific account
   const refreshBalanceForAccount = async (accountAddress) => {
@@ -167,49 +178,6 @@ export default function ConnectWallet() {
       showToast("Transfer failed!", "error", 3000);
     }
   };
-
-  let currentIndex = 0; // Track current account index
-
-  // const switchAccount = async () => {
-  //   try {
-  //     const accounts = await window.ethereum.request({
-  //       method: "eth_requestAccounts",
-  //     });
-
-  //     if (accounts.length > 0) {
-  //       // Rotate index
-  //       currentIndex = (currentIndex + 1) % accounts.length;
-  //       const newAccount = accounts[currentIndex];
-
-  //       setAccount(newAccount);
-  //       setBalance(""); // Clear old balance
-  //       setAvailableAccounts(accounts);
-
-  //       showToast(
-  //         `Switched to: ${newAccount.substring(0, 6)}...${newAccount.slice(
-  //           -4
-  //         )}`,
-  //         "success"
-  //       );
-
-  //       // Get balance for new account
-  //       const signer = await getSigner();
-  //       const contract = getContract(signer);
-  //       const bal = await contract.balanceOf(newAccount);
-  //       setBalance(bal.toString());
-
-  //       showToast(`Balance loaded: ${bal.toString()} GWRS`, "info", 3000);
-  //     } else {
-  //       showToast(
-  //         "No accounts found. Please connect your wallet!",
-  //         "error",
-  //         3000
-  //       );
-  //     }
-  //   } catch (err) {
-  //     handleError(err, "Account Switch");
-  //   }
-  // };
 
   // Get all available accounts
   const getAllAccounts = async () => {
@@ -263,6 +231,8 @@ export default function ConnectWallet() {
           4000
         );
       }
+
+      handleTgeExecution();
     } catch (err) {
       handleError(err, "Wallet Connection");
     } finally {
@@ -271,18 +241,16 @@ export default function ConnectWallet() {
   };
 
   // Disconnect wallet function
-const disconnect = () => {
-  try {
-    setAccount(""); // Clear account state
-    setBalance(""); // Clear balance
-    showToast("Wallet disconnected successfully!", "warning", 3000);
-  } catch (err) {
-    console.error("Error disconnecting wallet:", err);
-    showToast("Failed to disconnect wallet!", "error", 3000);
-  }
-};
-
-
+  const disconnect = () => {
+    try {
+      setAccount(""); // Clear account state
+      setBalance(""); // Clear balance
+      showToast("Wallet disconnected successfully!", "warning", 3000);
+    } catch (err) {
+      console.error("Error disconnecting wallet:", err);
+      showToast("Failed to disconnect wallet!", "error", 3000);
+    }
+  };
 
   const handlePauseUnpause = async () => {
     try {
@@ -393,6 +361,37 @@ const disconnect = () => {
 
   const getButtonLabel = () => (paused ? "Unpause Contract" : "Pause Contract");
 
+  const handleTgeExecution = async () => {
+    // setIsLoading(true);
+    const signer = await getSigner();
+    const contract = getContract(signer);
+
+    const isExecuted = await contract.tgeExecuted();
+
+    if (isExecuted) {
+      showToast("TGE Status : True ", "success", 2000);
+    } else {
+      showToast("TGE Status : False ", "error", 3000);
+    }
+    setExecuted(isExecuted);
+  };
+
+  const executeTGE = async () => {
+    setIsLoading(true);
+    try {
+      const signer = await getSigner();
+      const contract = getContract(signer);
+
+      const tx = await contract.executeTGE();
+      await tx.wait();
+
+      showToast("TGE Executed Successfully!", "success", 2000);
+    } catch (error) {
+      showToast(`Error: ${error.message}`, "error", 3000);
+    }
+    setIsLoading(false);
+  };
+
   return (
     <div className="connect-wallet-container">
       {/* Toast Container */}
@@ -422,10 +421,21 @@ const disconnect = () => {
         ))}
       </div>
       {/* Header */}
-      <div className="wallet-header">
+      <div>
+        <div className="wallet-header">
         <h1>Goodware Solidity Contract Dashboard</h1>
         {/* <p>Manage your tokens and execute TGE operations</p> */}
       </div>
+      <div className="logout">
+       <button  className={`btn switch-account-button ${
+                  isLoading ? "loading" : ""
+                }`} onClick={handleLogout}>Logout</button> 
+       
+      </div>
+        </div>
+      
+
+      
 
       {/* Dashboard Grid */}
       <div className="dashboard-grid">
@@ -477,19 +487,25 @@ const disconnect = () => {
               </button>
             )}
 
-            {/* {account && (
-              // disconnect
+            {account && (
               <button
-                className={`btn switch-account-button ${
-                  isLoading ? "loading" : ""
-                }`}
-                onClick={switchAccount}
+                className={`btn connect-button ${isLoading ? "loading" : ""}`}
+                onClick={() => handleTgeExecution()}
                 disabled={isLoading}
-                title="Switch to a different MetaMask account"
               >
-                🔄 Refresh Account
+                Check TGE Execution Status
               </button>
-            )} */}
+            )}
+
+            {account && !tgeExecuted && (
+              <button
+                className={`btn connect-button ${isLoading ? "loading" : ""}`}
+                onClick={() => executeTGE()}
+                disabled={isLoading}
+              >
+                Execute TGE
+              </button>
+            )}
           </div>
 
           {account && (
@@ -579,9 +595,6 @@ const disconnect = () => {
               <p className="orange-info">
                 logisticsWallet: {values.logisticsWallet}
               </p>
-              {/* <p>Team: {values.team}</p>
-          <p>Foundation: {values.foundation}</p>
-          <p>Logistics: {values.logistics}</p> */}
             </div>
           )}
         </div>
