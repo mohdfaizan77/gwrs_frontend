@@ -373,6 +373,7 @@ export default function ConnectWallet() {
       }
 
       handleTgeExecution();
+      fetchInitializers();
     } catch (err) {
       handleError(err, "Wallet Connection");
     } finally {
@@ -649,6 +650,22 @@ export default function ConnectWallet() {
           )}
         </div>
 
+          <div className="dashboard-card">
+          <h2 className="card-title">Token Allocations</h2>
+          {values && (
+            <div>
+              <p className="blue-info">Liquidity: {values.liquidityWallet}</p>
+              <p className="green-info">teamWallet: {values.teamWallet}</p>
+              <p className="violet-info">
+                foundationWallet: {values.foundationWallet}
+              </p>
+              <p className="orange-info">
+                logisticsWallet: {values.logisticsWallet}
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Transfer Tokens to User Address */}
         <div className="dashboard-card">
           <h2 className="card-title">Transfer Tokens</h2>
@@ -683,21 +700,7 @@ export default function ConnectWallet() {
           )}
         </div>
 
-        <div className="dashboard-card">
-          <h2 className="card-title">Token Allocations</h2>
-          {values && (
-            <div>
-              <p className="blue-info">Liquidity: {values.liquidityWallet}</p>
-              <p className="green-info">teamWallet: {values.teamWallet}</p>
-              <p className="violet-info">
-                foundationWallet: {values.foundationWallet}
-              </p>
-              <p className="orange-info">
-                logisticsWallet: {values.logisticsWallet}
-              </p>
-            </div>
-          )}
-        </div>
+      
 
         {/* Contract Information Card */}
         <div className="dashboard-card initializers-container">
