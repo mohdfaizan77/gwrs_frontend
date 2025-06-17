@@ -8,12 +8,17 @@ export default function ConnectWallet() {
   const navigate = useNavigate();
   const [account, setAccount] = useState("");
   const [balance, setBalance] = useState("");
-   const [investors, setInvestors] = useState([{ address: "", amount: "" }]);
-  const [toAddress, setToAddress] = useState(
-    "0x859c4567383A1555bE6549a40C349C1fd52214df"
-  );
+  const [investors, setInvestors] = useState([{ address: "", amount: "" }]);
+  const [toAddress, setToAddress] = useState("")
   const [amount, setAmount] = useState("");
+  const [allocationAddress, setAllocationAddress] = useState(""
+  );
+  const [allocationAmount, setAllocationAmount] = useState("");
+  const [getallocationAmount, setGetAllocationAmount] = useState("");
+  const [getallocationAddress, setGetAllocationAddress] = useState("0x859c4567383A1555bE6549a40C349C1fd52214df");
+
   const [transactionHash, setTransactionHash] = useState("");
+  const [alloTransactionHash, setAlloTransactionHash] = useState("");
   const [values, setValues] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
@@ -41,7 +46,7 @@ export default function ConnectWallet() {
     navigate("/");
   };
 
-   const addInvestor = () => {
+  const addInvestor = () => {
     setInvestors((prev) => [...prev, { address: "", amount: "" }]);
   };
 
@@ -55,52 +60,56 @@ export default function ConnectWallet() {
     );
   };
 
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setIsLoading(true);
-  
-      try {
-        if (!window.ethereum) {
-          throw new Error("MetaMask is not installed.");
-        }
-  
-        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-        const userAddress = accounts[0];
-  
-        const signer = await getSigner();
-        const contract = getContract(signer);
-  
-        // Validate addresses
-        const investorAddresses = investors.map(({ address }) => {
-          // if (!ethers.utils.isAddress(address)) {
-          //   throw new Error(`Invalid address: ${address}`);
-          // }
-          return address;
-        });
-  
-        // Validate amounts
-        const amounts = investors.map(({ amount }) => {
-          const parsedAmount = parseFloat(amount);
-          if (isNaN(parsedAmount) || parsedAmount <= 0) {
-            throw new Error(`Invalid amount: ${amount}`);
-          }
-          return parsedAmount.toString();
-          // return ethers.utils.parseEther(parsedAmount.toString());
-        });
-  
-        // Send transaction
-        const tx = await contract.setIDOAllocations(investorAddresses, amounts, { from: userAddress });
-        toast.info("Transaction pending...");
-        await tx.wait();
-        toast.success("IDO allocations set successfully!");
-        setInvestors([{ address: "", amount: "" }]);
-      } catch (error) {
-        toast.error(error.message || "Transaction failed");
-        console.error(error);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (!window.ethereum) {
+        throw new Error("MetaMask is not installed.");
       }
-  
-      setIsLoading(false);
-    };
+
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      const userAddress = accounts[0];
+
+      const signer = await getSigner();
+      const contract = getContract(signer);
+
+      // Validate addresses
+      const investorAddresses = investors.map(({ address }) => {
+        // if (!ethers.utils.isAddress(address)) {
+        //   throw new Error(`Invalid address: ${address}`);
+        // }
+        return address;
+      });
+
+      // Validate amounts
+      const amounts = investors.map(({ amount }) => {
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+          throw new Error(`Invalid amount: ${amount}`);
+        }
+        return parsedAmount.toString();
+        // return ethers.utils.parseEther(parsedAmount.toString());
+      });
+
+      // Send transaction
+      const tx = await contract.setIDOAllocations(investorAddresses, amounts, {
+        from: userAddress,
+      });
+      toast.info("Transaction pending...");
+      await tx.wait();
+      toast.success("IDO allocations set successfully!");
+      setInvestors([{ address: "", amount: "" }]);
+    } catch (error) {
+      toast.error(error.message || "Transaction failed");
+      console.error(error);
+    }
+
+    setIsLoading(false);
+  };
 
   // Enhanced error handler
   const handleError = (error, operation) => {
@@ -319,6 +328,56 @@ export default function ConnectWallet() {
     }
   };
 
+  const SetIdoAlocations = async () => {
+    try {
+      if (!allocationAddress || !allocationAmount) {
+        showToast("Please enter a valid address and amount!", "warning", 3000);
+        return;
+      }
+
+      const signer = await getSigner();
+      const contract = getContract(signer);
+
+      showToast("Processing transaction...", "info", 2000);
+
+      const tx = await contract.setIDOAllocations(
+        allocationAddress,
+        allocationAmount
+      );
+      await tx.wait(); // Wait for transaction confirmation
+
+      setAlloTransactionHash(tx.hash);
+      setAllocationAmount("");
+      showToast("Transfer successful!", "success", 3000);
+    } catch (error) {
+      console.error("Transfer failed:", error);
+      showToast("Transfer failed!", "error", 3000);
+    }
+  };
+
+  const getIdoAlocations = async () => {
+    try {
+      if (!getallocationAddress) {
+        showToast("Please enter a valid investor address!", "warning", 3000);
+        return;
+      }
+
+      const signer = await getSigner();
+      const contract = getContract(signer);
+
+      showToast("Fetching allocation...", "info", 2000);
+
+      const allocation = await contract.getIDOAllocation(getallocationAddress);
+
+      // Convert BigNumber to string or formatted value
+      setGetAllocationAmount(allocation.toString());
+      showToast("Investor allocation fetched!", "success", 3000);
+    } catch (error) {
+      console.error("Error fetching allocation:", error);
+      showToast("Failed to fetch allocation!", "error", 3000);
+    }
+  };
+
   // Get all available accounts
   const getAllAccounts = async () => {
     try {
@@ -392,8 +451,6 @@ export default function ConnectWallet() {
       showToast("Failed to disconnect wallet!", "error", 3000);
     }
   };
-
-
 
   const fetchInitializers = async () => {
     setIsLoading(true);
@@ -650,7 +707,7 @@ export default function ConnectWallet() {
           )}
         </div>
 
-          <div className="dashboard-card">
+        <div className="dashboard-card">
           <h2 className="card-title">Token Allocations</h2>
           {values && (
             <div>
@@ -699,8 +756,6 @@ export default function ConnectWallet() {
             </div>
           )}
         </div>
-
-      
 
         {/* Contract Information Card */}
         <div className="dashboard-card initializers-container">
@@ -768,61 +823,66 @@ export default function ConnectWallet() {
           )}
         </div>
 
-            <div className="dashboard-card">
-        <h2 className="card-title">Set IDO Allocations</h2>
-        <form onSubmit={handleSubmit} className="token-transfer-form">
-          {investors.map((investor, index) => (
-            <div key={index} className="token-transfer-input-group">
-              <div className="flex space-x-4 items-end">
-                <div className="flex-1 blue-info">
-                  <input
-                    type="text"
-                    placeholder="Investor Address"
-                    value={investor.address}
-                    onChange={(e) => handleInputChange(index, "address", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex-1 green-info">
-                  <input
-                    type="number"
-                    step="0.000000000000000001"
-                    placeholder="Amount (Tokens)"
-                    value={investor.amount}
-                    onChange={(e) => handleInputChange(index, "amount", e.target.value)}
-                    required
-                  />
-                </div>
-                {investors.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeInvestor(index)}
-                    className="btn switch-account-button"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-          <div className="flex justify-between token-transfer-actions">
+        {/* SetIdoAlocations*/}
+        <div className="dashboard-card">
+          <h2 className="card-title">Set Allocation to Investor</h2>
+          <div className="token-transfer-input-group blue-info">
+            <input
+              type="text"
+              placeholder="Investor Address"
+              value={allocationAddress}
+              onChange={(e) => setAllocationAddress(e.target.value)}
+            />
+          </div>
+          <div className="token-transfer-input-group green-info">
+            <input
+              type="number"
+              placeholder="Tokens"
+              value={allocationAmount}
+              onChange={(e) => setAllocationAmount(e.target.value)}
+            />
+          </div>
+          <div className="token_btn">
             <button
-              type="button"
-              onClick={addInvestor}
-              className="btn connect-button"
+              className="token-transfer-button"
+              onClick={SetIdoAlocations}
             >
-              Add Investor
-            </button>
-            <button
-              type="submit"
-              className={`btn token-transfer-button ${isLoading ? "loading" : ""}`}
-              disabled={isLoading}
-            >
-              {isLoading ? "Processing..." : "Submit Allocations"}
+              Set Allocations
             </button>
           </div>
-        </form>
-      </div>
+          {transactionHash && (
+            <div className="transaction-hash-display">
+              <p>✅ Transaction Hash: {alloTransactionHash}</p>
+            </div>
+          )}
+        </div>
+
+        {/* SetIdoAlocations*/}
+        <div className="dashboard-card">
+          <h2 className="card-title">Check Investor Allocation</h2>
+          <div className="token-transfer-input-group blue-info">
+            <input
+              type="text"
+              placeholder="Investor Address"
+              value={getallocationAddress}
+              onChange={(e) => setGetAllocationAddress(e.target.value)}
+            />
+          </div>
+          <div className="token_btn">
+            <button
+              className="token-transfer-button"
+              onClick={getIdoAlocations}
+            >
+              Check Investor Allocations
+            </button>
+          </div>
+          {getallocationAmount && (
+            <div className="allocation-display">
+              <br></br>
+              <p>💰 Investor Allocation: {getallocationAmount}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
