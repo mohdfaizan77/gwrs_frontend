@@ -110,7 +110,7 @@ const IDOAllocationForm = () => {
 
   return (
     <div className="connect-wallet-container">
-      <div className="dashboard-card token-transfer-card allocations">
+      <div className="dashboard-card token-transfer-card">
         <h2 className="card-title">Set IDO Allocations</h2>
         <form onSubmit={handleSubmit} className="token-transfer-form">
           {investors.map((investor, index) => (

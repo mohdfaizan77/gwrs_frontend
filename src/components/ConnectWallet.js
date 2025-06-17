@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { getSigner, getContract } from "../contract";
 import "../styles/ConnectWallet.css"; // Import the CSS
 
@@ -7,6 +8,7 @@ export default function ConnectWallet() {
   const navigate = useNavigate();
   const [account, setAccount] = useState("");
   const [balance, setBalance] = useState("");
+   const [investors, setInvestors] = useState([{ address: "", amount: "" }]);
   const [toAddress, setToAddress] = useState(
     "0x859c4567383A1555bE6549a40C349C1fd52214df"
   );
@@ -38,6 +40,67 @@ export default function ConnectWallet() {
   const handleLogout = () => {
     navigate("/");
   };
+
+   const addInvestor = () => {
+    setInvestors((prev) => [...prev, { address: "", amount: "" }]);
+  };
+
+  const removeInvestor = (index) => {
+    setInvestors((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleInputChange = (index, field, value) => {
+    setInvestors((prev) =>
+      prev.map((inv, i) => (i === index ? { ...inv, [field]: value } : inv))
+    );
+  };
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setIsLoading(true);
+  
+      try {
+        if (!window.ethereum) {
+          throw new Error("MetaMask is not installed.");
+        }
+  
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const userAddress = accounts[0];
+  
+        const signer = await getSigner();
+        const contract = getContract(signer);
+  
+        // Validate addresses
+        const investorAddresses = investors.map(({ address }) => {
+          // if (!ethers.utils.isAddress(address)) {
+          //   throw new Error(`Invalid address: ${address}`);
+          // }
+          return address;
+        });
+  
+        // Validate amounts
+        const amounts = investors.map(({ amount }) => {
+          const parsedAmount = parseFloat(amount);
+          if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            throw new Error(`Invalid amount: ${amount}`);
+          }
+          return parsedAmount.toString();
+          // return ethers.utils.parseEther(parsedAmount.toString());
+        });
+  
+        // Send transaction
+        const tx = await contract.setIDOAllocations(investorAddresses, amounts, { from: userAddress });
+        toast.info("Transaction pending...");
+        await tx.wait();
+        toast.success("IDO allocations set successfully!");
+        setInvestors([{ address: "", amount: "" }]);
+      } catch (error) {
+        toast.error(error.message || "Transaction failed");
+        console.error(error);
+      }
+  
+      setIsLoading(false);
+    };
 
   // Enhanced error handler
   const handleError = (error, operation) => {
@@ -329,44 +392,7 @@ export default function ConnectWallet() {
     }
   };
 
-  const handlePauseUnpause = async () => {
-    try {
-      setIsLoading(true);
-      const signer = await getSigner();
-      const contract = getContract(signer);
 
-      if (!account) {
-        console.error("No account connected");
-        showToast(
-          "No account connected. Please connect your wallet!",
-          "error",
-          3000
-        );
-        setIsLoading(false);
-        return;
-      }
-
-      // Check the current contract state
-      const isPaused = await contract.paused();
-      setPaused(isPaused); // Store paused state
-
-      if (isPaused) {
-        await contract.unpause(); // Unpause if paused
-        showToast("Contract is now unpaused!", "success", 3000);
-      } else {
-        await contract.pause(); // Pause if active
-        showToast("Contract is now paused!", "warning", 3000);
-      }
-
-      // Update paused state after execution
-      setPaused(await contract.paused());
-    } catch (error) {
-      console.error("Error pausing/unpausing contract:", error);
-      showToast("Failed to pause/unpause contract!", "error", 3000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const fetchInitializers = async () => {
     setIsLoading(true);
@@ -656,7 +682,7 @@ export default function ConnectWallet() {
             </div>
           )}
         </div>
-        
+
         <div className="dashboard-card">
           <h2 className="card-title">Token Allocations</h2>
           {values && (
@@ -672,6 +698,7 @@ export default function ConnectWallet() {
             </div>
           )}
         </div>
+
         {/* Contract Information Card */}
         <div className="dashboard-card initializers-container">
           <h2 className="card-title">Contract Information</h2>
@@ -737,6 +764,62 @@ export default function ConnectWallet() {
             </div>
           )}
         </div>
+
+            <div className="dashboard-card">
+        <h2 className="card-title">Set IDO Allocations</h2>
+        <form onSubmit={handleSubmit} className="token-transfer-form">
+          {investors.map((investor, index) => (
+            <div key={index} className="token-transfer-input-group">
+              <div className="flex space-x-4 items-end">
+                <div className="flex-1 blue-info">
+                  <input
+                    type="text"
+                    placeholder="Investor Address"
+                    value={investor.address}
+                    onChange={(e) => handleInputChange(index, "address", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex-1 green-info">
+                  <input
+                    type="number"
+                    step="0.000000000000000001"
+                    placeholder="Amount (Tokens)"
+                    value={investor.amount}
+                    onChange={(e) => handleInputChange(index, "amount", e.target.value)}
+                    required
+                  />
+                </div>
+                {investors.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeInvestor(index)}
+                    className="btn switch-account-button"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          <div className="flex justify-between token-transfer-actions">
+            <button
+              type="button"
+              onClick={addInvestor}
+              className="btn connect-button"
+            >
+              Add Investor
+            </button>
+            <button
+              type="submit"
+              className={`btn token-transfer-button ${isLoading ? "loading" : ""}`}
+              disabled={isLoading}
+            >
+              {isLoading ? "Processing..." : "Submit Allocations"}
+            </button>
+          </div>
+        </form>
+      </div>
       </div>
     </div>
   );
