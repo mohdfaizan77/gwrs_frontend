@@ -160,7 +160,7 @@
 .wallet-buttons {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
   margin-bottom: 20px;
 }
 
@@ -186,7 +186,12 @@
 }
 
 .switch-account-button {
-  background: #f59e0b;
+   background: #f59e0b;
+  color: white;
+}
+
+.claim-ido-button {
+  background: #083d0c;
   color: white;
 }
 

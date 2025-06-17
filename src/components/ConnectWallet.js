@@ -254,8 +254,14 @@ export default function ConnectWallet() {
   }, [account]);
 
   useEffect(() => {
-    handleTgeExecution();
-  }, [tgeExecuted]);
+    if (getallocationAmount) {
+      const timer = setTimeout(() => {
+        setGetAllocationAmount(null); // Hide allocation after 20 sec
+      }, 6000);
+
+      return () => clearTimeout(timer); // Cleanup when component re-renders
+    }
+  }, [getallocationAmount]);
 
   useEffect(() => {
     const fetchAndSetTgeTimestamp = async () => {
@@ -452,6 +458,21 @@ export default function ConnectWallet() {
     }
   };
 
+
+  const claimIDOTokens = async () => {
+    try {
+
+      const signer = await getSigner();
+      // Get contract Info balance
+      const contract = getContract(signer);
+      const bal = await contract.claimIDOTokens();
+    
+      showToast("Operation Successfull", "warning", 3000);
+    } catch (err) {
+      showToast("No Allocated Tokens Found", "error", 3000);
+    }
+  };
+
   const fetchInitializers = async () => {
     setIsLoading(true);
     try {
@@ -636,6 +657,19 @@ export default function ConnectWallet() {
                 title="Disconnect Wallet"
               >
                 🔄 Disconnect Wallet
+              </button>
+            )}
+            {account && (
+              // disconnect
+              <button
+                className={`btn claim-ido-button ${
+                  isLoading ? "loading" : ""
+                }`}
+                onClick={claimIDOTokens}
+                disabled={isLoading}
+                title="Clain Ido Allocated Token"
+              >
+                Clain Ido Allocated Token
               </button>
             )}
 
